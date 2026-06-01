@@ -1,0 +1,3 @@
+dog.jpg cat.jpg
+dog.jpg wolf.jpg
+cat.jpg wolf.jpg
