@@ -1,71 +1,72 @@
-public class HashTable{
-    private ImageFeature[] ifTable;
-    private int buckets;
+import java.util.Objects;
 
-    public HashTable(int buckets){
+public class HashTable {
+    private final ImageFeature[] ifTable;
+    private final boolean[] deleted;
+    private final int buckets;
+
+    public HashTable(int buckets) {
+        if (buckets <= 0) throw new IllegalArgumentException("Capacity must be positive");
         this.buckets = buckets;
         this.ifTable = new ImageFeature[buckets];
+        this.deleted = new boolean[buckets];
     }
 
-    public int hash(String name){
-        int hashval = 0;
-        for(int i=0;i<name.length();i++){
-            hashval = hashval + (int) name.charAt(i);//adds all the letters into a value
-        }
-        if(hashval<0){
-            hashval = - hashval;//cant be neg
-        }
-        return hashval % buckets;//makes the key
+    public int hash(String name) {
+        Objects.requireNonNull(name, "Feature name");
+        long value = 0;
+        for (int i = 0; i < name.length(); i++) value += name.charAt(i);
+        return (int) (value % buckets);
     }
 
-    public void insert(ImageFeature image){
+    /** Insert or replace by name; insertion into a full table fails promptly. */
+    public void insert(ImageFeature image) {
+        Objects.requireNonNull(image, "Feature");
         int key = hash(image.name);
-        while(ifTable[key]!= null){
-            key = (key+1)%buckets;//itterate till an empty spot is found
+        int available = -1;
+        for (int probes = 0; probes < buckets; probes++) {
+            if (ifTable[key] != null) {
+                if (ifTable[key].name.equals(image.name)) {
+                    ifTable[key] = image;
+                    return;
+                }
+            } else {
+                if (available < 0) available = key;
+                if (!deleted[key]) break;
+            }
+            key = (key + 1) % buckets;
         }
-        ifTable[key]= image;
+        if (available < 0) throw new IllegalStateException("Hash table is full");
+        ifTable[available] = image;
+        deleted[available] = false;
     }
 
-    public int search(String name){
+    public int search(String name) {
         int key = hash(name);
-        int start = key;
-        while(ifTable[key]!= null){
-            if(ifTable[key].name.equals(name)){//if the name is the same return curr key/i
-                return key;
-            }
-            key = (key+1)%buckets;
-            if(key == start){
-                break;//feature not there
-            }
+        for (int probes = 0; probes < buckets; probes++) {
+            if (ifTable[key] != null) {
+                if (ifTable[key].name.equals(name)) return key;
+            } else if (!deleted[key]) return -1;
+            key = (key + 1) % buckets;
         }
-        return -1;//nothing found
+        return -1;
     }
 
-    public void remove(ImageFeature image){
+    public void remove(ImageFeature image) {
+        Objects.requireNonNull(image, "Feature");
         int key = search(image.name);
-        if(key == -1){
-            System.out.println("ImageFeature not Found, Unable to Remove");
-            return;
-        }
+        if (key < 0) return;
         ifTable[key] = null;
+        deleted[key] = true;
     }
 
-    public ImageFeature returnFeature(String name){
+    public ImageFeature returnFeature(String name) {
         int key = search(name);
-        if(key == -1){
-            System.out.println("ImageFeature not found, unable to return");
-            return null;
-        }
-        return ifTable[key];
+        return key < 0 ? null : ifTable[key];
     }
 
-    public void printTable(){
-        for(int i = 0; i< buckets ;i++){
-            if(ifTable[i]!=null){
-                System.out.println(i+": "+ ifTable[i].name);
-            }else{
-                System.out.println(i+": x");//null means emprty
-            }
-        }
+    public void printTable() {
+        for (int i = 0; i < buckets; i++)
+            System.out.println(i + ": " + (ifTable[i] == null ? "x" : ifTable[i].name));
     }
 }
