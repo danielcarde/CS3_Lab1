@@ -1,36 +1,33 @@
-﻿# Lab1: Image Feature Search
+# Image Feature Search
 
-A Java lab that converts images into feature vectors and compares hash table versus B-tree lookup for image feature search.
+Academic Java project by Daniel Cardenas comparing a custom linear-probing hash table and B-tree over image feature vectors. It extracts vectors from sample images and calculates cosine similarity for image pairs.
 
-## Highlights
-Converts image files into numeric feature vectors.
-Stores feature records in a custom hash table.
-Stores feature records in a custom B-tree.
-Uses image pair data to compare lookups.
-Includes sample images for local testing.
+## Run
 
-## Overview
-This lab explores searchable image feature data. The program can generate feature files from images, generate image pairs, load the data, and compare lookup behavior through a hash table or B-tree.
-It combines image processing, file generation, custom data structures, and timing-style comparison in one Java project.
+Requires a JDK (CI uses Java 21). Run from the repository root so relative image/data paths resolve.
 
-## Why This Project
-This project is useful as a portfolio piece because it connects data structures to a more applied problem: searching image feature vectors. It shows how hash tables and trees can be compared in a concrete workflow.
+```sh
+mkdir -p build
+javac -d build *.java tests/HashTableRegression.java
+java -cp build FeatureFileGenerator
+java -cp build PairFileGenerator
+java -cp build lab1Main
+```
 
-## Usage
-Compile: Compile all Java files with javac *.java.
-Generate features: Run java FeatureFileGenerator if image_features.txt needs to be recreated.
-Generate pairs: Run java PairFileGenerator if image_pairs.txt needs to be recreated.
-Run: Execute the main comparison program with java lab1Main.
+`FeatureFileGenerator` creates `image_features.txt` from `dog.jpg`, `cat.jpg`, and `wolf.jpg`. The generated vector file is intentionally not committed. `PairFileGenerator` writes `image_pairs.txt`; it may replace that sample file. The console offers hash-table lookup, B-tree lookup, or exit.
 
-## Installation
-Ensure you have the Java Development Kit (JDK) installed on your system.
-Open a terminal in the lab folder before compiling so the program can find any required local text files.
+## Data structures
 
-## Architecture
-File Structure: The project contains lab1Main.java, HashTable.java, BTree.java, BTreeNode.java, ImageFeature.java, ImageToVector.java, FeatureFileGenerator.java, PairFileGenerator.java, image.java, sample images, and image_pairs.txt.
-Components: ImageToVector extracts image data, ImageFeature stores feature records, HashTable and BTree provide searchable structures, and lab1Main drives the comparison.
+`HashTable` validates capacity, bounds probing, preserves collision chains with deletion tombstones, and replaces a record with the same image name. Inserting a new name into a full table throws `IllegalStateException`. The console currently allocates 100 hash slots, so larger datasets need an explicit capacity change.
 
-## Future Improvements
-Regenerate large feature files instead of storing them in Git.
-Add clearer timing and comparison output.
-Support larger image datasets and more distance metrics.
+`BTree` and `BTreeNode` implement the tree comparison. `ImageToVector` extracts vectors; `ImageFeature` stores names and vectors. Console timings are exploratory measurements, not a controlled benchmark or a claim that one structure is faster.
+
+## Verification
+
+```sh
+java -cp build HashTableRegression
+```
+
+Checks cover colliding keys after deletion, slot reuse, duplicate names, invalid capacity, full-table termination, absent records, and long names. A deterministic 200-record shuffled insertion set is looked up in both structures. Compilation and these checks passed locally on JDK 25; CI repeats on JDK 21. This does not exhaustively validate B-tree deletion or arbitrary image inputs.
+
+Future work includes configurable capacity, stronger input validation, and reproducible performance experiments.
